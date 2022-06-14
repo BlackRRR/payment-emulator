@@ -1,0 +1,9 @@
+config:
+  service_port: "8000"
+
+  db_conn_config:
+    user: "postgres"
+    host: "localhost"
+    password: ""
+    db_name: "transaction_db"
+    pool_max_conns: "10"
