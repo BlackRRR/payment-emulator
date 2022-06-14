@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type request struct {
@@ -54,7 +55,7 @@ func initTransactionHandlers(h *mux.Router, s *Server, opts []httptransport.Serv
 		newEncodeResponse(),
 		opts...))
 
-	h.Methods("PUT").Path("/api/transaction/change-status-transaction/{id}&{transaction_id}&{secret_key}").Handler(httptransport.NewServer(
+	h.Methods("PUT").Path("/api/transaction/change-status-transaction/{id&transaction_id&secret_key}").Handler(httptransport.NewServer(
 		changeStatusTransactionEndpoint,
 		decodeChangeStatusTransactionRequest,
 		newEncodeResponse(),
@@ -78,7 +79,7 @@ func initTransactionHandlers(h *mux.Router, s *Server, opts []httptransport.Serv
 		newEncodeResponse(),
 		opts...))
 
-	h.Methods("DELETE").Path("/api/transaction/cancel-transaction").Handler(httptransport.NewServer(
+	h.Methods("DELETE").Path("/api/transaction/cancel-transaction/{id}").Handler(httptransport.NewServer(
 		cancelTransactionEndpoint,
 		decodeCancelTransactionRequest,
 		newEncodeResponse(),
@@ -93,21 +94,24 @@ func decodeCreateNewTransactionRequest(_ context.Context, r *http.Request) (inte
 		return &PaymentRequest{}, nil
 	}
 
-	req := PaymentRequest{}
+	req := &PaymentRequest{}
 	if err := json.Unmarshal(incomeReq.payload, &req); err != nil {
 		return nil, errors.Wrap(err, "unmarshal request")
 	}
 
-	return &req, nil
+	return req, nil
 }
 
 func decodeChangeStatusTransactionRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	id := mux.Vars(r)["id"]
-	trid := mux.Vars(r)["transaction_id"]
-	hash := mux.Vars(r)["secret_key"]
+	vars := mux.Vars(r)["id&transaction_id&secret_key"]
+	data := strings.Split(vars, "&")
+	id := data[0]
+	trid := data[1]
+	hash := data[2]
+
 	idInt, err := strconv.ParseInt(trid, 10, 64)
 	if err != nil {
-		log.Printf("failed read http request body: %s", err.Error())
+		log.Printf("failed read http vars body: %s", err.Error())
 		return &PaymentStatusCheckRequest{}, nil
 	}
 
@@ -117,57 +121,57 @@ func decodeChangeStatusTransactionRequest(_ context.Context, r *http.Request) (i
 		TransactionHash: hash,
 	}
 
-	return &req, nil
+	return req, nil
 }
 
 func decodeCheckStatusTransactionRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	id := mux.Vars(r)["id"]
 	idInt, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		log.Printf("failed read http request body: %s", err.Error())
+		log.Printf("failed parse id: %s", err.Error())
 		return &PaymentStatusCheckRequest{}, nil
 	}
 
-	req := PaymentStatusCheckRequest{
+	req := &PaymentStatusCheckRequest{
 		TransactionID: idInt,
 	}
 
-	return &req, nil
+	return req, nil
 }
 
 func decodeGetAllPaymentsByIDRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	id := mux.Vars(r)["id"]
 
-	req := PaymentGetFromIDRequest{
+	req := &PaymentGetFromIDRequest{
 		UserID: id,
 	}
 
-	return &req, nil
+	return req, nil
 }
 
 func decodeGetAllPaymentsByEmailRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	id := mux.Vars(r)["email"]
 
-	req := PaymentGetFromEmailRequest{
+	req := &PaymentGetFromEmailRequest{
 		Email: id,
 	}
 
-	return &req, nil
+	return req, nil
 }
 
 func decodeCancelTransactionRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	incomeReq, err := readRequestBody(r)
+	id := mux.Vars(r)["id"]
+	idInt, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		log.Printf("failed read http request body: %s", err.Error())
-		return &PaymentCancelRequest{}, nil
+		log.Printf("failed parse id: %s", err.Error())
+		return &PaymentStatusCheckRequest{}, nil
 	}
 
-	req := PaymentCancelRequest{}
-	if err := json.Unmarshal(incomeReq.payload, &req); err != nil {
-		return nil, errors.Wrap(err, "unmarshal request")
+	req := &PaymentCancelRequest{
+		TransactionID: idInt,
 	}
 
-	return &req, nil
+	return req, nil
 }
 
 func readRequestBody(r *http.Request) (*request, error) {
