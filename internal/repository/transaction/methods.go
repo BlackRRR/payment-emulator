@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
-func (r *TransactionRepository) CreatePayment(ctx context.Context, transactionID int64, transactionHash, userID, email, amount, currency, status string) error {
-	rows, err := r.ConnPool.Query(ctx, "INSERT INTO transaction (transaction_id, "+
+func (r *TransactionRepository) CreatePayment(ctx context.Context, transactionID, userID, amount int64, transactionHash, email, currency, status string) error {
+	rows, err := r.ConnPool.Query(ctx, "INSERT INTO transaction ("+
+		"transaction_id, "+
 		"transaction_hash, "+
 		"user_id, "+
 		"email, "+
@@ -32,19 +33,18 @@ func (r *TransactionRepository) CreatePayment(ctx context.Context, transactionID
 	return nil
 }
 
-func (r *TransactionRepository) ChangeStatus(ctx context.Context, transactionID int64, status string) error {
+func (r *TransactionRepository) ChangeStatus(ctx context.Context, transactionID int64, status string) (string, error) {
+	var newStatus string
 	now := time.Now()
-	rows, err := r.ConnPool.Query(ctx, "UPDATE transaction SET transaction_id = $1, status = $2, date_of_last_change = $3;",
-		transactionID,
+	err := r.ConnPool.QueryRow(ctx, "UPDATE transaction SET status = $1, date_of_last_change = $2 WHERE transaction_id = $3 RETURNING status;",
 		status,
-		now)
+		now,
+		transactionID).Scan(&newStatus)
 	if err != nil {
-		return errors.Wrap(err, "change status")
+		return "", errors.Wrap(err, "change status")
 	}
 
-	defer rows.Close()
-
-	return nil
+	return newStatus, nil
 }
 
 func (r *TransactionRepository) CheckStatus(ctx context.Context, transactionID int64) (string, error) {
@@ -69,7 +69,7 @@ func (r *TransactionRepository) CheckStatus(ctx context.Context, transactionID i
 	return status, nil
 }
 
-func (r *TransactionRepository) GetTransactionHashFromID(ctx context.Context, transactionID int64, userID string) (string, error) {
+func (r *TransactionRepository) GetTransactionHashFromID(ctx context.Context, transactionID, userID int64) (string, error) {
 	var transactionHash string
 
 	rows, err := r.ConnPool.Query(ctx, "SELECT transaction_hash FROM transaction WHERE transaction_id = $1 AND user_id = $2;",
@@ -94,13 +94,13 @@ func (r *TransactionRepository) GetTransactionHashFromID(ctx context.Context, tr
 	return transactionHash, nil
 }
 
-func (r *TransactionRepository) GetPaymentsByID(ctx context.Context, userID string) ([]*Transaction, error) {
+func (r *TransactionRepository) GetPaymentsByID(ctx context.Context, userID int64) ([]*Transaction, error) {
 	payment := &Transaction{
 		TransactionID:    0,
 		TransactionHash:  "",
-		UserID:           "",
+		UserID:           0,
 		Email:            "",
-		Amount:           "",
+		Amount:           0,
 		Currency:         "",
 		DateOfCreation:   time.Time{},
 		DateOfLastChange: time.Time{},
@@ -141,9 +141,9 @@ func (r *TransactionRepository) GetPaymentsByEmail(ctx context.Context, email st
 	payment := &Transaction{
 		TransactionID:    0,
 		TransactionHash:  "",
-		UserID:           "",
+		UserID:           0,
 		Email:            "",
-		Amount:           "",
+		Amount:           0,
 		Currency:         "",
 		DateOfCreation:   time.Time{},
 		DateOfLastChange: time.Time{},

@@ -2,51 +2,85 @@ package transaction
 
 import (
 	"context"
-	"fmt"
 	"github.com/BlackRRR/payment-emulator/internal/model"
 	"github.com/BlackRRR/payment-emulator/internal/repository/transaction"
 	"github.com/BlackRRR/payment-emulator/internal/utils"
 	"github.com/pkg/errors"
 	"math/rand"
+	"strings"
 	"time"
 )
 
-func (s *TransactionService) CreatePayment(ctx context.Context, userID, email, amount, currency string) (int64, string, error) {
+func (s *TransactionService) CreatePayment(ctx context.Context, userID, amount int64, email, currency string) (int64, string, string, error) {
 	rand.Seed(time.Now().UnixNano())
 	id := int64(rand.Intn(10000000))
 	hash := utils.GetHash()
 
-	fmt.Println(id)
+	correctEmail := strings.Contains(email, "@")
+	if !correctEmail {
+		err := s.rep.CreatePayment(ctx, id, userID, 0, "", "", "", model.StatusError)
+		if err != nil {
+			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
+		}
 
-	err := s.rep.CreatePayment(ctx, id, hash, userID, email, amount, currency, model.StatusNew)
-	if err != nil {
-		return 0, "", errors.Wrap(err, "service error: failed to create payment")
+		return id, "", model.StatusError, errors.New("Incorrect email")
 	}
 
-	return id, hash, nil
+	if amount < 0 {
+		err := s.rep.CreatePayment(ctx, id, userID, 0, "", "", "", model.StatusError)
+		if err != nil {
+			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
+		}
+
+		return id, "", model.StatusError, errors.New("Incorrect amount")
+	}
+
+	if currency == "RUB" || currency == "DOLLAR" || currency == "EURO" {
+		err := s.rep.CreatePayment(ctx, id, userID, amount, hash, email, currency, model.StatusNew)
+		if err != nil {
+			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
+		}
+
+		return id, hash, model.StatusNew, nil
+	}
+
+	err := s.rep.CreatePayment(ctx, id, userID, amount, hash, email, currency, model.StatusError)
+	if err != nil {
+		return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
+	}
+
+	return id, "", model.StatusError, errors.New("Incorrect currency")
 }
 
-func (s *TransactionService) ChangePaymentStatus(ctx context.Context, transactionID int64, transactionHash, userID string) (string, error) {
+func (s *TransactionService) ChangePaymentStatus(ctx context.Context, transactionID, userID int64, transactionHash string) (string, error) {
 	hash, err := s.rep.GetTransactionHashFromID(ctx, transactionID, userID)
 	if err != nil {
-		return "", errors.Wrap(err, "service error: get transaction hash")
+		status, err := s.rep.ChangeStatus(ctx, transactionID, model.StatusFailure)
+		if err != nil {
+			return status, errors.Wrap(err, "service error: change payment status")
+		}
+
+		return status, errors.Wrap(err, "service error: change payment status")
 	}
 
 	if hash != transactionHash {
-		err = s.rep.ChangeStatus(ctx, transactionID, model.StatusFailure)
+		status, err := s.rep.ChangeStatus(ctx, transactionID, model.StatusFailure)
 		if err != nil {
-			return model.StatusFailure, errors.Wrap(err, "service error: change payment status")
+			return status, errors.Wrap(err, "service error: change payment status")
 		}
 
-		return model.StatusFailure, nil
+		return status, nil
 	}
 
-	err = s.rep.ChangeStatus(ctx, transactionID, model.StatusSuccess)
+	status, err := s.rep.ChangeStatus(ctx, transactionID, model.StatusSuccess)
 	if err != nil {
-		return "", errors.Wrap(err, "service error: failed to change status")
+		status, err = s.rep.ChangeStatus(ctx, transactionID, model.StatusFailure)
+		if err != nil {
+			return status, errors.Wrap(err, "service error: change payment status")
+		}
 	}
 
-	return model.StatusSuccess, nil
+	return status, nil
 }
 
 func (s *TransactionService) CheckPaymentStatus(ctx context.Context, transactionID int64) (string, error) {
@@ -58,7 +92,7 @@ func (s *TransactionService) CheckPaymentStatus(ctx context.Context, transaction
 	return status, nil
 }
 
-func (s *TransactionService) GetAllPaymentByID(ctx context.Context, UserID string) ([]*transaction.Transaction, error) {
+func (s *TransactionService) GetAllPaymentByID(ctx context.Context, UserID int64) ([]*transaction.Transaction, error) {
 	payments, err := s.rep.GetPaymentsByID(ctx, UserID)
 	if err != nil {
 		return nil, errors.Wrap(err, "service error: get payments by ID")
@@ -86,6 +120,10 @@ func (s *TransactionService) CancelTransaction(ctx context.Context, transactionI
 
 	if status == model.StatusSuccess {
 		return model.StatusSuccess, nil
+	}
+
+	if status == model.StatusFailure {
+		return model.StatusFailure, nil
 	}
 
 	err = s.rep.CancelTransaction(ctx, transactionID)

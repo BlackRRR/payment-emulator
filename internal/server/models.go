@@ -10,9 +10,9 @@ import (
 //////////////////////////
 
 type PaymentRequest struct {
-	UserID   string `json:"user_id"`
+	UserID   int64  `json:"user_id"`
 	Email    string `json:"email"`
-	Amount   string `json:"amount"`
+	Amount   int64  `json:"amount"`
 	Currency string `json:"currency"`
 }
 
@@ -25,6 +25,7 @@ type PaymentResponse struct {
 type TransactionHashPayload struct {
 	TransactionID   int64  `json:"transaction_id"`
 	TransactionHash string `json:"transaction_hash"`
+	Status          string `json:"status"`
 }
 
 //////////////////////////
@@ -32,7 +33,7 @@ type TransactionHashPayload struct {
 //////////////////////////
 
 type PaymentStatusChangeRequest struct {
-	UserID          string `json:"user_id"`
+	UserID          int64  `json:"user_id"`
 	TransactionID   int64  `json:"transaction_id"`
 	TransactionHash string `json:"transaction_hash"`
 }
@@ -66,7 +67,7 @@ type TransactionStatusPayload struct {
 //////////////////////////
 
 type PaymentGetFromIDRequest struct {
-	UserID string `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 type PaymentGetFromIDResponse struct {

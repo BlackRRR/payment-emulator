@@ -4,12 +4,23 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/BlackRRR/payment-emulator/internal/model"
 	"github.com/BlackRRR/payment-emulator/internal/repository/transaction"
 	"github.com/BlackRRR/payment-emulator/test/test_model"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
+)
+
+const (
+	userID          = 1516124
+	transactionID   = 4433257
+	transactionHash = "xRRxxB9"
+	amount          = 5555
+	email           = "bl@er.tu"
+	currency        = "RUB"
 )
 
 type Client struct {
@@ -24,14 +35,14 @@ func TestCreatePaymentTransactionService(t *testing.T) {
 	paymentResponse := test_model.PaymentResponse{
 		Result:  0,
 		Payload: &test_model.TransactionHashPayload{},
-		Error:   nil,
+		Error:   &model.ServerError{},
 	}
 
 	marshal, err := json.Marshal(&test_model.PaymentRequest{
-		UserID:   "15",
-		Email:    "15",
-		Amount:   "15",
-		Currency: "rub",
+		UserID:   userID,
+		Email:    email,
+		Amount:   amount,
+		Currency: currency,
 	})
 	if err != nil {
 		t.Errorf("failed marshal payment request %v", err)
@@ -40,7 +51,7 @@ func TestCreatePaymentTransactionService(t *testing.T) {
 	r := bytes.NewReader(marshal)
 
 	c := NewClient("http://localhost:8000/api/transaction/create-new-transaction")
-	res, err := c.PostRequest(r)
+	res, err := c.NewRequest(r, http.MethodPost)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -55,21 +66,24 @@ func TestCreatePaymentTransactionService(t *testing.T) {
 	}
 
 	fmt.Println("Result: ", paymentResponse.Result,
-		"Payload: id = ", paymentResponse.Payload.TransactionID,
-		" hash = ", paymentResponse.Payload.TransactionHash,
-		" error ", paymentResponse.Error)
+		"Payload: id =", paymentResponse.Payload.TransactionID,
+		" hash =", paymentResponse.Payload.TransactionHash,
+		" error =", paymentResponse.Error)
 }
 
 func TestChangeStatusTransactionService(t *testing.T) {
 	paymentResponse := test_model.PaymentStatusChangeResponse{
 		Result:  0,
 		Payload: &test_model.TransactionStatusPayload{},
-		Error:   nil,
+		Error:   &model.ServerError{},
 	}
 
-	c := NewClient("http://localhost:8000/api/transaction/change-status-transaction/" + "15" + "&" + "38" + "&" + "SCsm3y5")
+	uID := strconv.FormatInt(userID, 10)
+	tID := strconv.FormatInt(transactionID, 10)
 
-	res, err := c.PutRequest()
+	c := NewClient("http://localhost:8000/api/transaction/change-status-transaction/" + uID + "&" + tID + "&" + transactionHash)
+
+	res, err := c.NewRequest(nil, http.MethodPut)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -83,9 +97,9 @@ func TestChangeStatusTransactionService(t *testing.T) {
 		t.Errorf("expected request payload to be not nil got %v", err)
 	}
 
-	fmt.Println("Result: ", paymentResponse.Result,
-		"Payload: status = ", paymentResponse.Payload.TransactionStatus,
-		" error ", paymentResponse.Error)
+	fmt.Println("Result:", paymentResponse.Result,
+		"Payload: status =", paymentResponse.Payload.TransactionStatus,
+		" error =", paymentResponse.Error)
 }
 
 func TestCheckPaymentStatusTransactionService(t *testing.T) {
@@ -95,8 +109,10 @@ func TestCheckPaymentStatusTransactionService(t *testing.T) {
 		Error:   nil,
 	}
 
-	c := NewClient("http://localhost:8000/api/transaction/check-status-transaction/" + "3911412")
-	res, err := c.GetRequest()
+	tID := strconv.FormatInt(transactionID, 10)
+
+	c := NewClient("http://localhost:8000/api/transaction/check-status-transaction/" + tID)
+	res, err := c.NewRequest(nil, http.MethodGet)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -110,9 +126,9 @@ func TestCheckPaymentStatusTransactionService(t *testing.T) {
 		t.Errorf("expected request payload to be not nil got %v", err)
 	}
 
-	fmt.Println("Result: ", paymentResponse.Result,
-		"Payload: status = ", paymentResponse.Payload.TransactionStatus,
-		" error ", paymentResponse.Error)
+	fmt.Println("Result:", paymentResponse.Result,
+		"Payload: status =", paymentResponse.Payload.TransactionStatus,
+		" error =", paymentResponse.Error)
 }
 
 func TestGetAllPaymentsByIDTransactionService(t *testing.T) {
@@ -120,20 +136,22 @@ func TestGetAllPaymentsByIDTransactionService(t *testing.T) {
 		Result: 0,
 		Payload: &test_model.Payments{Payments: []*transaction.Transaction{{
 			TransactionID:    0,
-			UserID:           "",
+			UserID:           0,
 			Email:            "",
-			Amount:           "",
+			Amount:           0,
 			Currency:         "",
 			DateOfCreation:   time.Time{},
 			DateOfLastChange: time.Time{},
 			Status:           "",
 		},
 		}},
-		Error: nil,
+		Error: &model.ServerError{},
 	}
 
-	c := NewClient("http://localhost:8000/api/transaction/get-payments-id/" + "15")
-	res, err := c.GetRequest()
+	uID := strconv.FormatInt(userID, 10)
+
+	c := NewClient("http://localhost:8000/api/transaction/get-payments-id/" + uID)
+	res, err := c.NewRequest(nil, http.MethodGet)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -153,7 +171,7 @@ func TestGetAllPaymentsByIDTransactionService(t *testing.T) {
 		fmt.Print(value, " ")
 	}
 
-	fmt.Println(" error ", paymentResponse.Error)
+	fmt.Println(" error =", paymentResponse.Error)
 }
 
 func TestGetAllPaymentsByEmailTransactionService(t *testing.T) {
@@ -161,20 +179,20 @@ func TestGetAllPaymentsByEmailTransactionService(t *testing.T) {
 		Result: 0,
 		Payload: &test_model.Payments{Payments: []*transaction.Transaction{{
 			TransactionID:    0,
-			UserID:           "",
+			UserID:           0,
 			Email:            "",
-			Amount:           "",
+			Amount:           0,
 			Currency:         "",
 			DateOfCreation:   time.Time{},
 			DateOfLastChange: time.Time{},
 			Status:           "",
 		},
 		}},
-		Error: nil,
+		Error: &model.ServerError{},
 	}
 
-	c := NewClient("http://localhost:8000/api/transaction/get-payments-email/" + "15")
-	res, err := c.GetRequest()
+	c := NewClient("http://localhost:8000/api/transaction/get-payments-email/" + email)
+	res, err := c.NewRequest(nil, http.MethodGet)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -188,13 +206,13 @@ func TestGetAllPaymentsByEmailTransactionService(t *testing.T) {
 		t.Errorf("expected request payload to be not nil got %v", err)
 	}
 
-	fmt.Println("Result: ", paymentResponse.Result)
+	fmt.Println("Result:", paymentResponse.Result)
 
 	for _, value := range paymentResponse.Payload.Payments {
 		fmt.Print(value, " ")
 	}
 
-	fmt.Println(" error ", paymentResponse.Error)
+	fmt.Println(" error =", paymentResponse.Error)
 
 }
 
@@ -202,12 +220,14 @@ func TestCancelTransactionService(t *testing.T) {
 	paymentResponse := test_model.PaymentCancelResponse{
 		Result:  0,
 		Payload: &test_model.TransactionStatusPayload{},
-		Error:   nil,
+		Error:   &model.ServerError{},
 	}
 
-	c := NewClient("http://localhost:8000/api/transaction/cancel-transaction/" + "3911412")
+	tID := strconv.FormatInt(transactionID, 10)
 
-	res, err := c.DeleteRequest()
+	c := NewClient("http://localhost:8000/api/transaction/cancel-transaction/" + tID)
+
+	res, err := c.NewRequest(nil, http.MethodDelete)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -222,64 +242,13 @@ func TestCancelTransactionService(t *testing.T) {
 	}
 
 	fmt.Println("Result: ", paymentResponse.Result,
-		"Payload: status = ", paymentResponse.Payload.TransactionStatus,
-		" error ", paymentResponse.Error)
+		"Payload: status =", paymentResponse.Payload.TransactionStatus,
+		" error =", paymentResponse.Error)
 }
 
-func (c Client) PostRequest(r io.Reader) (*json.Decoder, error) {
+func (c Client) NewRequest(r io.Reader, method string) (*json.Decoder, error) {
 	client := http.Client{}
-	request, err := http.NewRequest(http.MethodPost, c.url, r)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	decode := json.NewDecoder(resp.Body)
-
-	return decode, nil
-}
-
-func (c Client) GetRequest() (*json.Decoder, error) {
-	client := http.Client{}
-	request, err := http.NewRequest(http.MethodGet, c.url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	decode := json.NewDecoder(resp.Body)
-
-	return decode, nil
-}
-
-func (c Client) PutRequest() (*json.Decoder, error) {
-	client := http.Client{}
-	request, err := http.NewRequest(http.MethodPut, c.url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	decode := json.NewDecoder(resp.Body)
-
-	return decode, nil
-}
-
-func (c Client) DeleteRequest() (*json.Decoder, error) {
-	client := http.Client{}
-	request, err := http.NewRequest(http.MethodDelete, c.url, nil)
+	request, err := http.NewRequest(method, c.url, r)
 	if err != nil {
 		return nil, err
 	}

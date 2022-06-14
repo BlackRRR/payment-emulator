@@ -7,24 +7,24 @@ import (
 )
 
 func (s *Server) CreatePayment(ctx context.Context, request *PaymentRequest) (*PaymentResponse, error) {
-	transactionID, transactionHash, err := s.trans.CreatePayment(ctx, request.UserID, request.Email, request.Amount, request.Currency)
+	transactionID, transactionHash, status, err := s.trans.CreatePayment(ctx, request.UserID, request.Amount, request.Email, request.Currency)
 	if err != nil {
 		return &PaymentResponse{
 			Result:  model.ResultERR,
-			Payload: &TransactionHashPayload{transactionID, transactionHash},
+			Payload: &TransactionHashPayload{transactionID, transactionHash, status},
 			Error:   model.NewTransactionError(err),
 		}, nil
 	}
 
 	return &PaymentResponse{
 		Result:  model.ResultOK,
-		Payload: &TransactionHashPayload{transactionID, transactionHash},
+		Payload: &TransactionHashPayload{transactionID, transactionHash, status},
 		Error:   nil,
 	}, nil
 }
 
 func (s *Server) ChangePaymentStatus(ctx context.Context, request *PaymentStatusChangeRequest) (*PaymentStatusChangeResponse, error) {
-	status, err := s.trans.ChangePaymentStatus(ctx, request.TransactionID, request.TransactionHash, request.UserID)
+	status, err := s.trans.ChangePaymentStatus(ctx, request.TransactionID, request.UserID, request.TransactionHash)
 	if status == model.StatusFailure {
 		return &PaymentStatusChangeResponse{
 			Result:  model.ResultERR,
@@ -112,6 +112,14 @@ func (s *Server) CancelTransaction(ctx context.Context, request *PaymentCancelRe
 	}
 
 	if status == model.StatusSuccess {
+		return &PaymentCancelResponse{
+			Result:  model.ResultERR,
+			Payload: &TransactionStatusPayload{status},
+			Error:   model.NewTransactionError(errors.New("impossible to cancel the payment")),
+		}, nil
+	}
+
+	if status == model.StatusFailure {
 		return &PaymentCancelResponse{
 			Result:  model.ResultERR,
 			Payload: &TransactionStatusPayload{status},

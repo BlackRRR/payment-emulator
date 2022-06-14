@@ -109,15 +109,16 @@ func decodeChangeStatusTransactionRequest(_ context.Context, r *http.Request) (i
 	trid := data[1]
 	hash := data[2]
 
-	idInt, err := strconv.ParseInt(trid, 10, 64)
+	idInt64, err := strconv.ParseInt(id, 10, 64)
+	tridInt64, err := strconv.ParseInt(trid, 10, 64)
 	if err != nil {
 		log.Printf("failed read http vars body: %s", err.Error())
-		return &PaymentStatusCheckRequest{}, nil
+		return &PaymentStatusChangeRequest{}, nil
 	}
 
 	req := &PaymentStatusChangeRequest{
-		UserID:          id,
-		TransactionID:   idInt,
+		UserID:          idInt64,
+		TransactionID:   tridInt64,
 		TransactionHash: hash,
 	}
 
@@ -141,9 +142,14 @@ func decodeCheckStatusTransactionRequest(_ context.Context, r *http.Request) (in
 
 func decodeGetAllPaymentsByIDRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	id := mux.Vars(r)["id"]
+	idInt, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		log.Printf("failed parse id: %s", err.Error())
+		return &PaymentGetFromIDRequest{}, nil
+	}
 
 	req := &PaymentGetFromIDRequest{
-		UserID: id,
+		UserID: idInt,
 	}
 
 	return req, nil

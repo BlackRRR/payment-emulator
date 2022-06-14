@@ -8,11 +8,11 @@ import (
 )
 
 type Transactioner interface {
-	CreatePayment(ctx context.Context, transactionID int64, transactionHash, userID, email, amount, currency, status string) error
-	ChangeStatus(ctx context.Context, transactionID int64, status string) error
+	CreatePayment(ctx context.Context, transactionID, userID, amount int64, transactionHash, email, currency, status string) error
+	ChangeStatus(ctx context.Context, transactionID int64, status string) (string, error)
 	CheckStatus(ctx context.Context, transactionID int64) (string, error)
-	GetTransactionHashFromID(ctx context.Context, transactionID int64, userID string) (string, error)
-	GetPaymentsByID(ctx context.Context, userID string) ([]*Transaction, error)
+	GetTransactionHashFromID(ctx context.Context, transactionID, userID int64) (string, error)
+	GetPaymentsByID(ctx context.Context, userID int64) ([]*Transaction, error)
 	GetPaymentsByEmail(ctx context.Context, email string) ([]*Transaction, error)
 	CancelTransaction(ctx context.Context, transactionID int64) error
 }
@@ -30,9 +30,9 @@ func NewTransactionRepository(ctx context.Context, pool *pgxpool.Pool) (*Transac
 CREATE TABLE IF NOT EXISTS transaction(
 	transaction_id bigint UNIQUE, 
 	transaction_hash text UNIQUE, 
-	user_id text, 
+	user_id bigint, 
 	email text,
-	amount text,
+	amount bigint,
 	currency text,
 	date_of_creation timestamp NOT NULL DEFAULT TRANSACTION_TIMESTAMP(),
 	date_of_last_change timestamp NOT NULL DEFAULT TRANSACTION_TIMESTAMP(),
@@ -48,9 +48,9 @@ CREATE TABLE IF NOT EXISTS transaction(
 type Transaction struct {
 	TransactionID    int64     `json:"transaction_id"`
 	TransactionHash  string    `json:"transaction_hash"`
-	UserID           string    `json:"user_id"`
+	UserID           int64     `json:"user_id"`
 	Email            string    `json:"email"`
-	Amount           string    `json:"amount"`
+	Amount           int64     `json:"amount"`
 	Currency         string    `json:"currency"`
 	DateOfCreation   time.Time `json:"date_of_creation"`
 	DateOfLastChange time.Time `json:"date_of_last_change"`
