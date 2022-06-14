@@ -1,6 +1,6 @@
 package transaction
 
-import "payment-emulator/internal/repository/transaction"
+import "github.com/BlackRRR/payment-emulator/internal/repository/transaction"
 
 type TransactionService struct {
 	rep transaction.Transactioner

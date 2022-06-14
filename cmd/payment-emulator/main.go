@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
+	"github.com/BlackRRR/payment-emulator/internal/config"
+	"github.com/BlackRRR/payment-emulator/internal/repository"
+	"github.com/BlackRRR/payment-emulator/internal/server"
+	"github.com/BlackRRR/payment-emulator/internal/services"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"payment-emulator/internal/config"
-	"payment-emulator/internal/repository"
-	"payment-emulator/internal/server"
-	"payment-emulator/internal/services"
 	"syscall"
 )
 

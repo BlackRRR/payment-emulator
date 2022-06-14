@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
+	"github.com/BlackRRR/payment-emulator/internal/model"
 	"github.com/pkg/errors"
-	"payment-emulator/internal/model"
 )
 
 func (s *Server) CreatePayment(ctx context.Context, request *PaymentRequest) (*PaymentResponse, error) {

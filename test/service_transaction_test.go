@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/BlackRRR/payment-emulator/internal/repository/transaction"
+	"github.com/BlackRRR/payment-emulator/test/test_model"
 	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"payment-emulator/internal/repository/transaction"
-	"payment-emulator/test/test_model"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -92,9 +91,9 @@ func TestChangeStatusTransactionService(t *testing.T) {
 
 	defer svr.Close()
 
-	c := NewClient("http://localhost:8000/api/transaction/change-status-transaction/" + "15" + "?" + strconv.FormatInt(Transaction.TransactionID, 10) + "?" + Transaction.TransactionHash)
+	c := NewClient("http://localhost:8000/api/transaction/change-status-transaction/" + "15" + "?" + "38" + "?" + "SCsm3y5")
 
-	res, err := c.PutRequest()
+	res, err := c.PutRequest(svr)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -121,10 +120,14 @@ func TestCheckPaymentStatusTransactionService(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}))
 
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	})
+
 	defer svr.Close()
 
 	c := NewClient("http://localhost:8000/api/transaction/check-status-transaction/" + "3911412")
-	res, err := c.GetRequest()
+	res, err := c.GetRequest(handler)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -161,10 +164,13 @@ func TestGetAllPaymentsByIDTransactionService(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}))
 
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	})
+
 	defer svr.Close()
 
 	c := NewClient("http://localhost:8000/api/transaction/get-payments-id/" + "15")
-	res, err := c.GetRequest()
+	res, err := c.GetRequest(handler)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -201,10 +207,13 @@ func TestGetAllPaymentsByEmailTransactionService(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}))
 
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	})
+
 	defer svr.Close()
 
 	c := NewClient("http://localhost:8000/api/transaction/get-payments-email/" + "15")
-	res, err := c.GetRequest()
+	res, err := c.GetRequest(handler)
 	if err != nil {
 		t.Errorf("expected err to be nil got %v", err)
 	}
@@ -279,33 +288,41 @@ func (c Client) PostRequest(r io.Reader) ([]byte, error) {
 	return out, nil
 }
 
-func (c Client) GetRequest() ([]byte, error) {
-	res, err := http.Get(c.url)
+func (c Client) GetRequest(handler http.HandlerFunc) ([]byte, error) {
+	rr := httptest.NewRecorder()
+	request, err := http.NewRequest(http.MethodGet, c.url, nil)
+	handler.ServeHTTP(rr, request)
+
+	out, err := io.ReadAll(rr.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to complete POST request")
+		return nil, err
 	}
 
-	res.Close = true
-
-	defer res.Body.Close()
-	out, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to read response data")
-	}
+	//res, err := http.Get(c.url)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "unable to complete POST request")
+	//}
+	//
+	//res.Close = true
+	//
+	//defer res.Body.Close()
+	//out, err := ioutil.ReadAll(res.Body)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "unable to read response data")
+	//}
 
 	return out, nil
 }
 
-func (c Client) PutRequest() ([]byte, error) {
+func (c Client) PutRequest(server *httptest.Server) ([]byte, error) {
+	rr := httptest.NewRecorder()
+
 	res, err := http.NewRequest(http.MethodPut, c.url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to complete POST request")
 	}
 
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
-	handler.ServeHTTP(rr, res)
+	server.Config.Handler.ServeHTTP(rr, res)
 
 	check := rr.Body.String()
 

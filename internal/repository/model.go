@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
+	"github.com/BlackRRR/payment-emulator/internal/repository/transaction"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
-	"payment-emulator/internal/repository/transaction"
 
 	_ "github.com/lib/pq"
 )

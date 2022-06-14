@@ -1,8 +1,8 @@
 package services
 
 import (
-	"payment-emulator/internal/repository"
-	"payment-emulator/internal/services/transaction"
+	"github.com/BlackRRR/payment-emulator/internal/repository"
+	"github.com/BlackRRR/payment-emulator/internal/services/transaction"
 )
 
 type Services struct {

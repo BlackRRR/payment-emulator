@@ -3,11 +3,11 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"github.com/BlackRRR/payment-emulator/internal/services"
+	"github.com/BlackRRR/payment-emulator/internal/services/transaction"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	"net/http"
-	"payment-emulator/internal/services"
-	"payment-emulator/internal/services/transaction"
 )
 
 type Server struct {

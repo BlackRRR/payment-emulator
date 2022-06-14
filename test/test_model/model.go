@@ -1,8 +1,8 @@
 package test_model
 
 import (
-	"payment-emulator/internal/model"
-	"payment-emulator/internal/repository/transaction"
+	"github.com/BlackRRR/payment-emulator/internal/model"
+	"github.com/BlackRRR/payment-emulator/internal/repository/transaction"
 )
 
 //////////////////////////

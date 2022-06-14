@@ -3,11 +3,11 @@ package transaction
 import (
 	"context"
 	"fmt"
+	"github.com/BlackRRR/payment-emulator/internal/model"
+	"github.com/BlackRRR/payment-emulator/internal/repository/transaction"
+	"github.com/BlackRRR/payment-emulator/internal/utils"
 	"github.com/pkg/errors"
 	"math/rand"
-	"payment-emulator/internal/model"
-	"payment-emulator/internal/repository/transaction"
-	"payment-emulator/internal/utils"
 	"time"
 )
 

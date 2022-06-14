@@ -4,6 +4,6 @@ config:
   db_conn_config:
     user: "postgres"
     host: "localhost"
-    password: "!BlackR1"
+    password: ""
     db_name: "transaction_db"
     pool_max_conns: "10"
