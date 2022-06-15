@@ -8,7 +8,7 @@ import (
 )
 
 type Transactioner interface {
-	CreatePayment(ctx context.Context, transactionID, userID, amount int64, transactionHash, email, currency, status string) error
+	CreatePayment(ctx context.Context, payment *Transaction) error
 	ChangeStatus(ctx context.Context, transactionID int64, status string) (string, error)
 	CheckStatus(ctx context.Context, transactionID int64) (string, error)
 	GetTransactionHashFromID(ctx context.Context, transactionID, userID int64) (string, error)

@@ -11,14 +11,18 @@ import (
 	"time"
 )
 
-func (s *TransactionService) CreatePayment(ctx context.Context, userID, amount int64, email, currency string) (int64, string, string, error) {
+func (s *TransactionService) CreatePayment(ctx context.Context, payment *transaction.Transaction) (int64, string, string, error) {
 	rand.Seed(time.Now().UnixNano())
-	id := int64(rand.Intn(10000000))
-	hash := utils.GetHash()
+	id := rand.Int63n(10000000)
+	hash := utils.GetUUID()
 
-	correctEmail := strings.Contains(email, "@")
+	correctEmail := strings.Contains(payment.Email, "@")
 	if !correctEmail {
-		err := s.rep.CreatePayment(ctx, id, userID, 0, "", "", "", model.StatusError)
+		err := s.rep.CreatePayment(ctx, &transaction.Transaction{
+			TransactionID: id,
+			UserID:        payment.UserID,
+			Status:        model.StatusError,
+		})
 		if err != nil {
 			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
 		}
@@ -26,8 +30,12 @@ func (s *TransactionService) CreatePayment(ctx context.Context, userID, amount i
 		return id, "", model.StatusError, errors.New("Incorrect email")
 	}
 
-	if amount < 0 {
-		err := s.rep.CreatePayment(ctx, id, userID, 0, "", "", "", model.StatusError)
+	if payment.Amount < 0 {
+		err := s.rep.CreatePayment(ctx, &transaction.Transaction{
+			TransactionID: id,
+			UserID:        payment.UserID,
+			Status:        model.StatusError,
+		})
 		if err != nil {
 			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
 		}
@@ -35,8 +43,16 @@ func (s *TransactionService) CreatePayment(ctx context.Context, userID, amount i
 		return id, "", model.StatusError, errors.New("Incorrect amount")
 	}
 
-	if currency == "RUB" || currency == "DOLLAR" || currency == "EURO" {
-		err := s.rep.CreatePayment(ctx, id, userID, amount, hash, email, currency, model.StatusNew)
+	if payment.Currency == "RUB" || payment.Currency == "DOLLAR" || payment.Currency == "EURO" {
+		err := s.rep.CreatePayment(ctx, &transaction.Transaction{
+			TransactionID:   id,
+			TransactionHash: hash,
+			UserID:          payment.UserID,
+			Email:           payment.Email,
+			Amount:          payment.Amount,
+			Currency:        payment.Currency,
+			Status:          model.StatusNew,
+		})
 		if err != nil {
 			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
 		}
@@ -44,7 +60,11 @@ func (s *TransactionService) CreatePayment(ctx context.Context, userID, amount i
 		return id, hash, model.StatusNew, nil
 	}
 
-	err := s.rep.CreatePayment(ctx, id, userID, amount, hash, email, currency, model.StatusError)
+	err := s.rep.CreatePayment(ctx, &transaction.Transaction{
+		TransactionID: id,
+		UserID:        payment.UserID,
+		Status:        model.StatusError,
+	})
 	if err != nil {
 		return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
 	}
