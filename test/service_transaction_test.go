@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	userID          = 1516124
+	userID          = 8040554
 	transactionID   = 4433257
-	transactionHash = "xRRxxB9"
+	transactionHash = "hai0gjO"
 	amount          = 5555
 	email           = "bl@er.tu"
 	currency        = "RUB"
