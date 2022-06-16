@@ -1,6 +1,9 @@
 package utils
 
-import "math/rand"
+import (
+	"math/rand"
+	"time"
+)
 
 const (
 	AvailableSymbolInUUID = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
@@ -8,6 +11,7 @@ const (
 )
 
 func GetUUID() string {
+	rand.Seed(time.Now().UnixNano())
 	var key string
 
 	rs := []rune(AvailableSymbolInUUID)
