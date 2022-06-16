@@ -16,8 +16,19 @@ func (s *TransactionService) CreatePayment(ctx context.Context, payment *transac
 	id := rand.Int63n(10000000)
 	hash := utils.GetUUID()
 
-	correctEmail := strings.Contains(payment.Email, "@")
-	if !correctEmail {
+	//Random number of payments goes to error status
+	if rand.Intn(2) == 0 {
+		err := s.rep.CreatePayment(ctx, &transaction.Payment{
+			TransactionID: id,
+			UserID:        payment.UserID,
+			Status:        model.StatusError,
+		})
+		if err != nil {
+			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
+		}
+	}
+
+	if !strings.Contains(payment.Email, "@") {
 		err := s.rep.CreatePayment(ctx, &transaction.Payment{
 			TransactionID: id,
 			UserID:        payment.UserID,
