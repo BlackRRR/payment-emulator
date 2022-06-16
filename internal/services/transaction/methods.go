@@ -12,8 +12,8 @@ import (
 )
 
 func (s *TransactionService) CreatePayment(ctx context.Context, payment *transaction.Payment) (int64, string, string, error) {
-	id := rand.Int63n(10000000)
 	rand.Seed(time.Now().UnixNano())
+	id := rand.Int63n(10000000)
 	hash := utils.GetUUID()
 
 	//Random number of payments goes to error status
