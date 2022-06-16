@@ -12,27 +12,31 @@ import (
 )
 
 func (s *TransactionService) CreatePayment(ctx context.Context, payment *transaction.Payment) (int64, string, string, error) {
-	rand.Seed(time.Now().UnixNano())
 	id := rand.Int63n(10000000)
+	rand.Seed(time.Now().UnixNano())
 	hash := utils.GetUUID()
 
 	//Random number of payments goes to error status
 	if rand.Intn(2) == 0 {
 		err := s.rep.CreatePayment(ctx, &transaction.Payment{
-			TransactionID: id,
-			UserID:        payment.UserID,
-			Status:        model.StatusError,
+			TransactionID:   id,
+			TransactionHash: hash,
+			UserID:          payment.UserID,
+			Status:          model.StatusError,
 		})
 		if err != nil {
 			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
 		}
+
+		return id, "", model.StatusError, errors.New("Random error status")
 	}
 
 	if !strings.Contains(payment.Email, "@") {
 		err := s.rep.CreatePayment(ctx, &transaction.Payment{
-			TransactionID: id,
-			UserID:        payment.UserID,
-			Status:        model.StatusError,
+			TransactionID:   id,
+			TransactionHash: hash,
+			UserID:          payment.UserID,
+			Status:          model.StatusError,
 		})
 		if err != nil {
 			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
@@ -43,9 +47,10 @@ func (s *TransactionService) CreatePayment(ctx context.Context, payment *transac
 
 	if payment.Amount < 0 {
 		err := s.rep.CreatePayment(ctx, &transaction.Payment{
-			TransactionID: id,
-			UserID:        payment.UserID,
-			Status:        model.StatusError,
+			TransactionID:   id,
+			TransactionHash: hash,
+			UserID:          payment.UserID,
+			Status:          model.StatusError,
 		})
 		if err != nil {
 			return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
@@ -72,9 +77,10 @@ func (s *TransactionService) CreatePayment(ctx context.Context, payment *transac
 	}
 
 	err := s.rep.CreatePayment(ctx, &transaction.Payment{
-		TransactionID: id,
-		UserID:        payment.UserID,
-		Status:        model.StatusError,
+		TransactionID:   id,
+		TransactionHash: hash,
+		UserID:          payment.UserID,
+		Status:          model.StatusError,
 	})
 	if err != nil {
 		return 0, "", model.StatusError, errors.Wrap(err, "service error: failed to create payment")
