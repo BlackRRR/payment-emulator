@@ -7,16 +7,16 @@ import (
 )
 
 func (r *TransactionRepository) CreatePayment(ctx context.Context, payment *Transaction) error {
-	_, err := r.ConnPool.Exec(ctx, "INSERT INTO transaction ("+
-		"transaction_id, "+
-		"transaction_hash, "+
-		"user_id, "+
-		"email, "+
-		"amount, "+
-		"currency, "+
-		"status"+
-		") "+
-		"VALUES ($1,$2,$3,$4,$5,$6,$7);",
+	_, err := r.ConnPool.Exec(ctx, `
+INSERT INTO transaction 
+		(transaction_id, 
+		transaction_hash, 
+		user_id, 
+		email, 
+		amount, 
+		currency,
+		status)
+VALUES ($1,$2,$3,$4,$5,$6,$7);`,
 		payment.TransactionID,
 		payment.TransactionHash,
 		payment.UserID,
@@ -34,8 +34,9 @@ func (r *TransactionRepository) CreatePayment(ctx context.Context, payment *Tran
 func (r *TransactionRepository) ChangeStatus(ctx context.Context, transactionID int64, status string) (string, error) {
 	var newStatus string
 	now := time.Now()
-	err := r.ConnPool.QueryRow(ctx, "UPDATE transaction SET status = $1, date_of_last_change = $2"+
-		" WHERE transaction_id = $3 RETURNING status;",
+	err := r.ConnPool.QueryRow(ctx, `
+UPDATE transaction SET status = $1, date_of_last_change = $2
+	WHERE transaction_id = $3 RETURNING status;`,
 		status,
 		now,
 		transactionID).Scan(&newStatus)
@@ -60,7 +61,9 @@ func (r *TransactionRepository) CheckStatus(ctx context.Context, transactionID i
 func (r *TransactionRepository) GetTransactionHashFromID(ctx context.Context, transactionID, userID int64) (string, error) {
 	var transactionHash string
 
-	err := r.ConnPool.QueryRow(ctx, "SELECT transaction_hash FROM transaction WHERE transaction_id = $1 AND user_id = $2;",
+	err := r.ConnPool.QueryRow(ctx, `
+SELECT transaction_hash FROM transaction 
+	WHERE transaction_id = $1 AND user_id = $2;`,
 		transactionID,
 		userID).Scan(&transactionHash)
 	if err != nil {
@@ -74,7 +77,9 @@ func (r *TransactionRepository) GetPaymentsByID(ctx context.Context, userID int6
 	payment := &Transaction{}
 	var payments []*Transaction
 
-	rows, err := r.ConnPool.Query(ctx, "SELECT * FROM transaction WHERE user_id = $1;", userID)
+	rows, err := r.ConnPool.Query(ctx, `
+SELECT * FROM transaction 
+	WHERE user_id = $1;`, userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "check status")
 	}
@@ -106,7 +111,9 @@ func (r *TransactionRepository) GetPaymentsByEmail(ctx context.Context, email st
 	payment := &Transaction{}
 	var payments []*Transaction
 
-	rows, err := r.ConnPool.Query(ctx, "SELECT * FROM transaction WHERE email = $1;", email)
+	rows, err := r.ConnPool.Query(ctx, `
+SELECT * FROM transaction
+	WHERE email = $1;`, email)
 	if err != nil {
 		return nil, errors.Wrap(err, "check status")
 	}
@@ -135,7 +142,9 @@ func (r *TransactionRepository) GetPaymentsByEmail(ctx context.Context, email st
 }
 
 func (r *TransactionRepository) CancelTransaction(ctx context.Context, transactionID int64) error {
-	_, err := r.ConnPool.Exec(ctx, "DELETE FROM transaction WHERE transaction_id = $1;", transactionID)
+	_, err := r.ConnPool.Exec(ctx, `
+DELETE FROM transaction 
+	WHERE transaction_id = $1;`, transactionID)
 	if err != nil {
 		return errors.Wrap(err, "delete transaction")
 	}
