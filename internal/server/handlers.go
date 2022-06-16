@@ -3,11 +3,19 @@ package server
 import (
 	"context"
 	"github.com/BlackRRR/payment-emulator/internal/model"
+	"github.com/BlackRRR/payment-emulator/internal/repository/transaction"
 	"github.com/pkg/errors"
 )
 
 func (s *Server) CreatePayment(ctx context.Context, request *PaymentRequest) (*PaymentResponse, error) {
-	transactionID, transactionHash, status, err := s.trans.CreatePayment(ctx, request.UserID, request.Amount, request.Email, request.Currency)
+	payment := &transaction.Payment{
+		UserID:   request.UserID,
+		Email:    request.Email,
+		Amount:   request.Amount,
+		Currency: request.Currency,
+	}
+
+	transactionID, transactionHash, status, err := s.trans.CreatePayment(ctx, payment)
 	if err != nil {
 		return &PaymentResponse{
 			Result:  model.ResultERR,

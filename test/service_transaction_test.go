@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
-	"time"
 )
 
 const (
@@ -133,19 +132,9 @@ func TestCheckPaymentStatusTransactionService(t *testing.T) {
 
 func TestGetAllPaymentsByIDTransactionService(t *testing.T) {
 	paymentResponse := test_model.PaymentGetFromIDResponse{
-		Result: 0,
-		Payload: &test_model.Payments{Payments: []*transaction.Transaction{{
-			TransactionID:    0,
-			UserID:           0,
-			Email:            "",
-			Amount:           0,
-			Currency:         "",
-			DateOfCreation:   time.Time{},
-			DateOfLastChange: time.Time{},
-			Status:           "",
-		},
-		}},
-		Error: &model.ServerError{},
+		Result:  0,
+		Payload: &test_model.Payments{Payments: []*transaction.Payment{{}}},
+		Error:   &model.ServerError{},
 	}
 
 	uID := strconv.FormatInt(userID, 10)
@@ -176,19 +165,9 @@ func TestGetAllPaymentsByIDTransactionService(t *testing.T) {
 
 func TestGetAllPaymentsByEmailTransactionService(t *testing.T) {
 	paymentResponse := test_model.PaymentGetFromEmailResponse{
-		Result: 0,
-		Payload: &test_model.Payments{Payments: []*transaction.Transaction{{
-			TransactionID:    0,
-			UserID:           0,
-			Email:            "",
-			Amount:           0,
-			Currency:         "",
-			DateOfCreation:   time.Time{},
-			DateOfLastChange: time.Time{},
-			Status:           "",
-		},
-		}},
-		Error: &model.ServerError{},
+		Result:  0,
+		Payload: &test_model.Payments{Payments: []*transaction.Payment{{}}},
+		Error:   &model.ServerError{},
 	}
 
 	c := NewClient("http://localhost:8000/api/transaction/get-payments-email/" + email)

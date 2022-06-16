@@ -6,29 +6,27 @@ import (
 	"time"
 )
 
-func (r *TransactionRepository) CreatePayment(ctx context.Context, transactionID, userID, amount int64, transactionHash, email, currency, status string) error {
-	rows, err := r.ConnPool.Query(ctx, "INSERT INTO transaction ("+
-		"transaction_id, "+
-		"transaction_hash, "+
-		"user_id, "+
-		"email, "+
-		"amount, "+
-		"currency, "+
-		"status"+
-		") "+
-		"VALUES ($1,$2,$3,$4,$5,$6,$7);",
-		transactionID,
-		transactionHash,
-		userID,
-		email,
-		amount,
+func (r *TransactionRepository) CreatePayment(ctx context.Context, payment *Payment) error {
+	_, err := r.ConnPool.Exec(ctx, `
+INSERT INTO transaction 
+		(transaction_id, 
+		transaction_hash, 
+		user_id, 
+		email, 
+		amount, 
 		currency,
 		status)
+VALUES ($1,$2,$3,$4,$5,$6,$7);`,
+		payment.TransactionID,
+		payment.TransactionHash,
+		payment.UserID,
+		payment.Email,
+		payment.Amount,
+		payment.Currency,
+		payment.Currency)
 	if err != nil {
 		return errors.Wrap(err, "create transaction")
 	}
-
-	defer rows.Close()
 
 	return nil
 }
@@ -36,7 +34,9 @@ func (r *TransactionRepository) CreatePayment(ctx context.Context, transactionID
 func (r *TransactionRepository) ChangeStatus(ctx context.Context, transactionID int64, status string) (string, error) {
 	var newStatus string
 	now := time.Now()
-	err := r.ConnPool.QueryRow(ctx, "UPDATE transaction SET status = $1, date_of_last_change = $2 WHERE transaction_id = $3 RETURNING status;",
+	err := r.ConnPool.QueryRow(ctx, `
+UPDATE transaction SET status = $1, date_of_last_change = $2
+	WHERE transaction_id = $3 RETURNING status;`,
 		status,
 		now,
 		transactionID).Scan(&newStatus)
@@ -49,22 +49,11 @@ func (r *TransactionRepository) ChangeStatus(ctx context.Context, transactionID 
 
 func (r *TransactionRepository) CheckStatus(ctx context.Context, transactionID int64) (string, error) {
 	var status string
-	rows, err := r.ConnPool.Query(ctx, "SELECT status FROM transaction WHERE transaction_id = $1;", transactionID)
+	err := r.ConnPool.QueryRow(ctx, "SELECT status FROM transaction WHERE transaction_id = $1;",
+		transactionID).Scan(&status)
 	if err != nil {
 		return "", errors.Wrap(err, "check status")
 	}
-
-	for rows.Next() {
-		err = rows.Scan(
-			&status,
-		)
-	}
-
-	if err != nil {
-		return "", errors.Wrap(err, "failed to scan")
-	}
-
-	defer rows.Close()
 
 	return status, nil
 }
@@ -72,46 +61,29 @@ func (r *TransactionRepository) CheckStatus(ctx context.Context, transactionID i
 func (r *TransactionRepository) GetTransactionHashFromID(ctx context.Context, transactionID, userID int64) (string, error) {
 	var transactionHash string
 
-	rows, err := r.ConnPool.Query(ctx, "SELECT transaction_hash FROM transaction WHERE transaction_id = $1 AND user_id = $2;",
+	err := r.ConnPool.QueryRow(ctx, `
+SELECT transaction_hash FROM transaction 
+	WHERE transaction_id = $1 AND user_id = $2;`,
 		transactionID,
-		userID)
+		userID).Scan(&transactionHash)
 	if err != nil {
 		return "", errors.Wrap(err, "select transaction hash")
 	}
 
-	for rows.Next() {
-		err = rows.Scan(
-			&transactionHash,
-		)
-	}
-
-	if err != nil {
-		return "", errors.Wrap(err, "failed to scan")
-	}
-
-	defer rows.Close()
-
 	return transactionHash, nil
 }
 
-func (r *TransactionRepository) GetPaymentsByID(ctx context.Context, userID int64) ([]*Transaction, error) {
-	payment := &Transaction{
-		TransactionID:    0,
-		TransactionHash:  "",
-		UserID:           0,
-		Email:            "",
-		Amount:           0,
-		Currency:         "",
-		DateOfCreation:   time.Time{},
-		DateOfLastChange: time.Time{},
-		Status:           "",
-	}
+func (r *TransactionRepository) GetPaymentsByID(ctx context.Context, userID int64) ([]*Payment, error) {
+	payment := &Payment{}
+	var payments []*Payment
 
-	var payments []*Transaction
-	rows, err := r.ConnPool.Query(ctx, "SELECT * FROM transaction WHERE user_id = $1;", userID)
+	rows, err := r.ConnPool.Query(ctx, `
+SELECT * FROM transaction 
+	WHERE user_id = $1;`, userID)
 	if err != nil {
 		return nil, errors.Wrap(err, "check status")
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		err = rows.Scan(
@@ -131,30 +103,21 @@ func (r *TransactionRepository) GetPaymentsByID(ctx context.Context, userID int6
 
 		payments = append(payments, payment)
 	}
-
-	defer rows.Close()
 
 	return payments, nil
 }
 
-func (r *TransactionRepository) GetPaymentsByEmail(ctx context.Context, email string) ([]*Transaction, error) {
-	payment := &Transaction{
-		TransactionID:    0,
-		TransactionHash:  "",
-		UserID:           0,
-		Email:            "",
-		Amount:           0,
-		Currency:         "",
-		DateOfCreation:   time.Time{},
-		DateOfLastChange: time.Time{},
-		Status:           "",
-	}
+func (r *TransactionRepository) GetPaymentsByEmail(ctx context.Context, email string) ([]*Payment, error) {
+	payment := &Payment{}
+	var payments []*Payment
 
-	var payments []*Transaction
-	rows, err := r.ConnPool.Query(ctx, "SELECT * FROM transaction WHERE email = $1;", email)
+	rows, err := r.ConnPool.Query(ctx, `
+SELECT * FROM transaction
+	WHERE email = $1;`, email)
 	if err != nil {
 		return nil, errors.Wrap(err, "check status")
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		err = rows.Scan(
@@ -174,19 +137,17 @@ func (r *TransactionRepository) GetPaymentsByEmail(ctx context.Context, email st
 
 		payments = append(payments, payment)
 	}
-
-	defer rows.Close()
 
 	return payments, nil
 }
 
 func (r *TransactionRepository) CancelTransaction(ctx context.Context, transactionID int64) error {
-	row, err := r.ConnPool.Query(ctx, "DELETE FROM transaction WHERE transaction_id = $1;", transactionID)
+	_, err := r.ConnPool.Exec(ctx, `
+DELETE FROM transaction 
+	WHERE transaction_id = $1;`, transactionID)
 	if err != nil {
 		return errors.Wrap(err, "delete transaction")
 	}
-
-	defer row.Close()
 
 	return nil
 }
