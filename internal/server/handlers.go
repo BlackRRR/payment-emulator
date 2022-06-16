@@ -88,7 +88,6 @@ func (s *Server) GetAllPaymentsByID(ctx context.Context, request *PaymentGetFrom
 		Payload: &Payments{payments},
 		Error:   nil,
 	}, nil
-
 }
 
 func (s *Server) GetAllPaymentsByEmail(ctx context.Context, request *PaymentGetFromEmailRequest) (*PaymentGetFromEmailResponse, error) {
@@ -106,7 +105,6 @@ func (s *Server) GetAllPaymentsByEmail(ctx context.Context, request *PaymentGetF
 		Payload: &Payments{payments},
 		Error:   nil,
 	}, nil
-
 }
 
 func (s *Server) CancelTransaction(ctx context.Context, request *PaymentCancelRequest) (*PaymentCancelResponse, error) {

@@ -136,7 +136,6 @@ func (s *TransactionService) GetAllPaymentByID(ctx context.Context, UserID int64
 	}
 
 	return payments, nil
-
 }
 
 func (s *TransactionService) GetAllPaymentByEmail(ctx context.Context, email string) ([]*transaction.Payment, error) {
@@ -146,7 +145,6 @@ func (s *TransactionService) GetAllPaymentByEmail(ctx context.Context, email str
 	}
 
 	return payments, nil
-
 }
 
 func (s *TransactionService) CancelTransaction(ctx context.Context, transactionID int64) (string, error) {
@@ -168,6 +166,10 @@ func (s *TransactionService) CancelTransaction(ctx context.Context, transactionI
 		return "", errors.Wrap(err, "service error: cancel payment")
 	}
 
-	return "", nil
+	status, err = s.rep.ChangeStatus(ctx, transactionID, model.StatusCanceled)
+	if err != nil {
+		return "", errors.Wrap(err, "service error: cancel payment")
+	}
 
+	return status, nil
 }
