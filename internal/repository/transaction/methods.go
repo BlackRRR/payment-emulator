@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (r *TransactionRepository) CreatePayment(ctx context.Context, payment *Transaction) error {
+func (r *TransactionRepository) CreatePayment(ctx context.Context, payment *Payment) error {
 	_, err := r.ConnPool.Exec(ctx, `
 INSERT INTO transaction 
 		(transaction_id, 
@@ -73,9 +73,9 @@ SELECT transaction_hash FROM transaction
 	return transactionHash, nil
 }
 
-func (r *TransactionRepository) GetPaymentsByID(ctx context.Context, userID int64) ([]*Transaction, error) {
-	payment := &Transaction{}
-	var payments []*Transaction
+func (r *TransactionRepository) GetPaymentsByID(ctx context.Context, userID int64) ([]*Payment, error) {
+	payment := &Payment{}
+	var payments []*Payment
 
 	rows, err := r.ConnPool.Query(ctx, `
 SELECT * FROM transaction 
@@ -107,9 +107,9 @@ SELECT * FROM transaction
 	return payments, nil
 }
 
-func (r *TransactionRepository) GetPaymentsByEmail(ctx context.Context, email string) ([]*Transaction, error) {
-	payment := &Transaction{}
-	var payments []*Transaction
+func (r *TransactionRepository) GetPaymentsByEmail(ctx context.Context, email string) ([]*Payment, error) {
+	payment := &Payment{}
+	var payments []*Payment
 
 	rows, err := r.ConnPool.Query(ctx, `
 SELECT * FROM transaction

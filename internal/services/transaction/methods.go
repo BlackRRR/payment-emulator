@@ -11,14 +11,14 @@ import (
 	"time"
 )
 
-func (s *TransactionService) CreatePayment(ctx context.Context, payment *transaction.Transaction) (int64, string, string, error) {
+func (s *TransactionService) CreatePayment(ctx context.Context, payment *transaction.Payment) (int64, string, string, error) {
 	rand.Seed(time.Now().UnixNano())
 	id := rand.Int63n(10000000)
 	hash := utils.GetUUID()
 
 	correctEmail := strings.Contains(payment.Email, "@")
 	if !correctEmail {
-		err := s.rep.CreatePayment(ctx, &transaction.Transaction{
+		err := s.rep.CreatePayment(ctx, &transaction.Payment{
 			TransactionID: id,
 			UserID:        payment.UserID,
 			Status:        model.StatusError,
@@ -31,7 +31,7 @@ func (s *TransactionService) CreatePayment(ctx context.Context, payment *transac
 	}
 
 	if payment.Amount < 0 {
-		err := s.rep.CreatePayment(ctx, &transaction.Transaction{
+		err := s.rep.CreatePayment(ctx, &transaction.Payment{
 			TransactionID: id,
 			UserID:        payment.UserID,
 			Status:        model.StatusError,
@@ -44,7 +44,7 @@ func (s *TransactionService) CreatePayment(ctx context.Context, payment *transac
 	}
 
 	if payment.Currency == "RUB" || payment.Currency == "DOLLAR" || payment.Currency == "EURO" {
-		err := s.rep.CreatePayment(ctx, &transaction.Transaction{
+		err := s.rep.CreatePayment(ctx, &transaction.Payment{
 			TransactionID:   id,
 			TransactionHash: hash,
 			UserID:          payment.UserID,
@@ -60,7 +60,7 @@ func (s *TransactionService) CreatePayment(ctx context.Context, payment *transac
 		return id, hash, model.StatusNew, nil
 	}
 
-	err := s.rep.CreatePayment(ctx, &transaction.Transaction{
+	err := s.rep.CreatePayment(ctx, &transaction.Payment{
 		TransactionID: id,
 		UserID:        payment.UserID,
 		Status:        model.StatusError,
@@ -112,7 +112,7 @@ func (s *TransactionService) CheckPaymentStatus(ctx context.Context, transaction
 	return status, nil
 }
 
-func (s *TransactionService) GetAllPaymentByID(ctx context.Context, UserID int64) ([]*transaction.Transaction, error) {
+func (s *TransactionService) GetAllPaymentByID(ctx context.Context, UserID int64) ([]*transaction.Payment, error) {
 	payments, err := s.rep.GetPaymentsByID(ctx, UserID)
 	if err != nil {
 		return nil, errors.Wrap(err, "service error: get payments by ID")
@@ -122,7 +122,7 @@ func (s *TransactionService) GetAllPaymentByID(ctx context.Context, UserID int64
 
 }
 
-func (s *TransactionService) GetAllPaymentByEmail(ctx context.Context, email string) ([]*transaction.Transaction, error) {
+func (s *TransactionService) GetAllPaymentByEmail(ctx context.Context, email string) ([]*transaction.Payment, error) {
 	payments, err := s.rep.GetPaymentsByEmail(ctx, email)
 	if err != nil {
 		return nil, errors.Wrap(err, "service error: get payments by email")

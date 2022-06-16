@@ -133,7 +133,7 @@ func TestCheckPaymentStatusTransactionService(t *testing.T) {
 func TestGetAllPaymentsByIDTransactionService(t *testing.T) {
 	paymentResponse := test_model.PaymentGetFromIDResponse{
 		Result:  0,
-		Payload: &test_model.Payments{Payments: []*transaction.Transaction{{}}},
+		Payload: &test_model.Payments{Payments: []*transaction.Payment{{}}},
 		Error:   &model.ServerError{},
 	}
 
@@ -166,7 +166,7 @@ func TestGetAllPaymentsByIDTransactionService(t *testing.T) {
 func TestGetAllPaymentsByEmailTransactionService(t *testing.T) {
 	paymentResponse := test_model.PaymentGetFromEmailResponse{
 		Result:  0,
-		Payload: &test_model.Payments{Payments: []*transaction.Transaction{{}}},
+		Payload: &test_model.Payments{Payments: []*transaction.Payment{{}}},
 		Error:   &model.ServerError{},
 	}
 

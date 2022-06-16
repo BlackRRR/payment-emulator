@@ -91,7 +91,7 @@ type PaymentGetFromEmailResponse struct {
 }
 
 type Payments struct {
-	Payments []*transaction.Transaction
+	Payments []*transaction.Payment
 }
 
 //////////////////////////

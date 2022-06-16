@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Server) CreatePayment(ctx context.Context, request *PaymentRequest) (*PaymentResponse, error) {
-	payment := &transaction.Transaction{
+	payment := &transaction.Payment{
 		UserID:   request.UserID,
 		Email:    request.Email,
 		Amount:   request.Amount,

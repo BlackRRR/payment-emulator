@@ -8,12 +8,12 @@ import (
 )
 
 type Transactioner interface {
-	CreatePayment(ctx context.Context, payment *Transaction) error
+	CreatePayment(ctx context.Context, payment *Payment) error
 	ChangeStatus(ctx context.Context, transactionID int64, status string) (string, error)
 	CheckStatus(ctx context.Context, transactionID int64) (string, error)
 	GetTransactionHashFromID(ctx context.Context, transactionID, userID int64) (string, error)
-	GetPaymentsByID(ctx context.Context, userID int64) ([]*Transaction, error)
-	GetPaymentsByEmail(ctx context.Context, email string) ([]*Transaction, error)
+	GetPaymentsByID(ctx context.Context, userID int64) ([]*Payment, error)
+	GetPaymentsByEmail(ctx context.Context, email string) ([]*Payment, error)
 	CancelTransaction(ctx context.Context, transactionID int64) error
 }
 
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS transaction(
 	return &transactionRep, nil
 }
 
-type Transaction struct {
+type Payment struct {
 	TransactionID    int64     `json:"transaction_id"`
 	TransactionHash  string    `json:"transaction_hash"`
 	UserID           int64     `json:"user_id"`
